@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kamikire</title>
+    <link rel="icon" href="icons/favicon.png">
+    <link rel="stylesheet" href="index.css">
+</head>
+<body>
+    <canvas id="drawingCanvas" class="drawing-canvas" aria-hidden="true"></canvas>
+
+    <aside class="stylebar" aria-label="Text tools">
+        <button type="button" data-command="bold" title="Bold"><strong>B</strong></button>
+        <button type="button" data-command="italic" title="Italic"><em>I</em></button>
+        <button type="button" data-command="underline" title="Underline"><u>U</u></button>
+        <button type="button" data-command="formatBlock" data-value="h2" title="Heading">H</button>
+        <button type="button" data-command="insertUnorderedList" title="Bulleted list">&bull;</button>
+        <button type="button" data-command="insertOrderedList" title="Numbered list">1.</button>
+        <button id="checkList" type="button" title="Checkbox item">&#9745;</button>
+        <label title="Text color">
+            <input id="textColor" type="color" value="#f2f3f5">
+        </label>
+        <button id="keepPasteFormatting" type="button" title="Keep copied formatting on paste">Paste<br>style</button>
+        <button id="clearFormat" class="clear-format" type="button" title="Clear formatting">&times;</button>
+    </aside>
+
+    <button id="settingsToggle" class="settings-toggle" type="button" title="Settings">&#9881;</button>
+
+    <aside class="drawing-toolbar" aria-label="Drawing tools">
+        <button id="drawingToggle" type="button" title="Pencil" aria-pressed="false">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M4 20l4.5-1 10-10a2.1 2.1 0 0 0-3-3l-10 10L4 20z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+                <path d="M14 7l3 3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+        </button>
+        <button id="drawingEraser" type="button" title="Eraser" aria-pressed="false">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M4 15l8-8a2.8 2.8 0 0 1 4 0l3 3a2.8 2.8 0 0 1 0 4l-6 6H7l-3-3a1.4 1.4 0 0 1 0-2z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+                <path d="M10 20h10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+        </button>
+        <label class="drawing-size" title="Brush size">
+            <input id="drawingSize" type="range" min="1" max="50" step="1" value="4">
+        </label>
+        <label title="Drawing color">
+            <input id="drawingColor" type="color" value="#58d68d">
+        </label>
+        <button id="drawingClear" class="drawing-clear" type="button" title="Clear drawing">×</button>
+    </aside>
+
+    <main class="page">
+        <section id="searchShell" class="search-shell" aria-label="Search">
+            <form id="searchForm" class="search-form">
+                <input id="searchInput" type="search" autocomplete="off" spellcheck="false" placeholder="Search or write a query">
+                <button id="defaultSearch" type="submit" title="Search" aria-label="Search"></button>
+            </form>
+            <div id="engines" class="engines" aria-label="Search engines"></div>
+        </section>
+
+        <article id="notepad" class="notepad" contenteditable="true" spellcheck="true" aria-label="Notepad"></article>
+    </main>
+
+    <aside id="settingsPanel" class="settings-panel hidden">
+        <header>
+            <h2>Settings</h2>
+            <button id="closeSettings" type="button">x</button>
+        </header>
+        <nav class="settings-tabs" aria-label="Settings tabs">
+            <button type="button" class="active" data-settings-tab="general">General</button>
+            <button type="button" data-settings-tab="search">Search</button>
+            <button type="button" data-settings-tab="shortcuts">Shortcuts</button>
+            <button type="button" data-settings-tab="info">Info</button>
+        </nav>
+        <div class="settings-tab-panels">
+            <section class="settings-tab-panel active" data-settings-panel="general">
+                <label class="check-row">
+                    <input id="showSearch" type="checkbox">
+                    <span>Show search</span>
+                </label>
+                <label class="check-row">
+                    <input id="showTodo" type="checkbox">
+                    <span>Show tasks panel</span>
+                </label>
+                <label class="check-row">
+                    <input id="showDrawingToolbar" type="checkbox">
+                    <span>Show drawing tools</span>
+                </label>
+                <label class="check-row">
+                    <input id="showStats" type="checkbox">
+                    <span>Show text stats</span>
+                </label>
+                <label class="check-row">
+                    <input id="showStylebar" type="checkbox">
+                    <span>Show text tools</span>
+                </label>
+                <label class="setting-field">
+                    <span>Notepad width</span>
+                    <input id="noteWidth" type="range" min="34" max="96" step="1">
+                    <output id="noteWidthValue"></output>
+                </label>
+                <div class="color-settings-row">
+                    <label class="color-field">
+                        <span>Background</span>
+                        <input id="backgroundColor" type="color">
+                    </label>
+                    <label class="color-field">
+                        <span>Secondary</span>
+                        <input id="linkColor" type="color">
+                    </label>
+                </div>
+            </section>
+            <section class="settings-tab-panel search-settings-panel" data-settings-panel="search">
+                <div class="engine-head">
+                    <span>Logo</span>
+                    <span>Name</span>
+                    <span>Default</span>
+                    <span></span>
+                </div>
+                <div id="engineEditor" class="engine-editor"></div>
+                <div class="engine-actions">
+                    <button id="addEngine" type="button">Add Search Engine</button>
+                </div>
+            </section>
+            <section class="settings-tab-panel shortcut-settings" data-settings-panel="shortcuts">
+                <h3>Shortcuts</h3>
+                <div class="shortcut-row">
+                    <span>Low priority</span>
+                    <button type="button" data-shortcut-action="priorityLow"></button>
+                </div>
+                <div class="shortcut-row">
+                    <span>Normal priority</span>
+                    <button type="button" data-shortcut-action="priorityNormal"></button>
+                </div>
+                <div class="shortcut-row">
+                    <span>High priority</span>
+                    <button type="button" data-shortcut-action="priorityHigh"></button>
+                </div>
+                <div class="shortcut-row">
+                    <span>Focus search</span>
+                    <button type="button" data-shortcut-action="focusSearch"></button>
+                </div>
+                <div class="shortcut-row">
+                    <span>Bold</span>
+                    <button type="button" data-shortcut-action="styleBold"></button>
+                </div>
+                <div class="shortcut-row">
+                    <span>Italic</span>
+                    <button type="button" data-shortcut-action="styleItalic"></button>
+                </div>
+                <div class="shortcut-row">
+                    <span>Underline</span>
+                    <button type="button" data-shortcut-action="styleUnderline"></button>
+                </div>
+                <div class="shortcut-row">
+                    <span>Heading</span>
+                    <button type="button" data-shortcut-action="styleHeading"></button>
+                </div>
+                <div class="shortcut-row">
+                    <span>Bulleted list</span>
+                    <button type="button" data-shortcut-action="styleBulletList"></button>
+                </div>
+                <div class="shortcut-row">
+                    <span>Numbered list</span>
+                    <button type="button" data-shortcut-action="styleNumberedList"></button>
+                </div>
+                <div class="shortcut-row">
+                    <span>Checkbox item</span>
+                    <button type="button" data-shortcut-action="styleChecklist"></button>
+                </div>
+                <div class="shortcut-row">
+                    <span>Paste style toggle</span>
+                    <button type="button" data-shortcut-action="stylePasteFormatting"></button>
+                </div>
+                <div class="shortcut-row">
+                    <span>Clear formatting</span>
+                    <button type="button" data-shortcut-action="styleClear"></button>
+                </div>
+                <div class="shortcut-row">
+                    <span>Pencil</span>
+                    <button type="button" data-shortcut-action="drawingPen"></button>
+                </div>
+                <div class="shortcut-row">
+                    <span>Eraser</span>
+                    <button type="button" data-shortcut-action="drawingEraser"></button>
+                </div>
+            </section>
+            <section class="settings-tab-panel info-settings-panel" data-settings-panel="info">
+                <section class="settings-card">
+                    <h3>About</h3>
+                    <div class="settings-links">
+                        <a class="link-card" href="https://github.com/turbozver/Kamikire" target="_blank" rel="noreferrer">
+                            <span class="link-icon github-icon" aria-hidden="true"></span>
+                            <span>
+                                <strong>GitHub</strong>
+                            </span>
+                        </a>
+                        <a class="link-card" href="mailto:turbozver24@gmail.com" target="_blank" rel="noreferrer">
+                            <span class="link-icon mail-icon" aria-hidden="true"></span>
+                            <span>
+                                <strong>Contact</strong>
+                                <small>turbozver24@gmail.com</small>
+                            </span>
+                        </a>
+                    </div>
+                </section>
+                <section class="settings-card data-actions">
+                    <h3>Data</h3>
+                    <div class="data-action-grid">
+                        <button id="importData" type="button">Import</button>
+                        <button id="exportSettings" type="button">Export Settings</button>
+                        <button id="exportTasks" type="button">Export Tasks</button>
+                        <button id="exportAllData" type="button">Export All Data</button>
+                        <button id="resetEngines" type="button">Reset Search Engines</button>
+                        <button id="resetAllData" class="danger" type="button">Reset All Data</button>
+                    </div>
+                    <input id="importDataFile" type="file" accept="application/json" hidden>
+                </section>
+            </section>
+        </div>
+    </aside>
+
+    <aside id="stats" class="stats" title="Ctrl+Click to analyze custom text">
+        <span id="statsValue">0 chars | 0 words | 0 no spaces</span>
+    </aside>
+
+    <aside id="todoPanel" class="todo-panel hidden">
+        <header>
+            <h2>Tasks</h2>
+            <span id="todoStatus">0 open</span>
+        </header>
+        <div class="todo-editor">
+            <input id="todoTitle" type="text" placeholder="Task">
+            <textarea id="todoNote" placeholder="Details"></textarea>
+            <div class="todo-editor-row">
+                <div id="todoPriority" class="priority-segment" role="group" aria-label="Priority">
+                    <button type="button" data-priority="low">Low</button>
+                    <button type="button" data-priority="normal" class="active">Normal</button>
+                    <button type="button" data-priority="high">High</button>
+                </div>
+                <div id="todoTagCombobox" class="todo-tag-combobox">
+                    <div id="todoSelectedTags" class="todo-selected-tags"></div>
+                    <input id="todoTagInput" type="text" placeholder="Add tag">
+                    <div id="todoTagSuggestions" class="todo-tag-suggestions hidden"></div>
+                </div>
+            </div>
+            <button id="todoAdd" type="button">Add task</button>
+        </div>
+        <div class="todo-separator"></div>
+        <div class="todo-filters">
+            <input id="todoSearch" type="search" placeholder="Search">
+            <select id="todoStatusFilter">
+                <option value="all">All Types</option>
+                <option value="open">Open</option>
+                <option value="done">Done</option>
+            </select>
+            <select id="todoPriorityFilter">
+                <option value="">Any Priority</option>
+                <option value="high">High</option>
+                <option value="normal">Normal</option>
+                <option value="low">Low</option>
+            </select>
+            <select id="todoSortMode">
+                <option value="newest">Newest</option>
+                <option value="oldest">Oldest</option>
+                <option value="priority">Priority</option>
+                <option value="manual">Manual</option>
+            </select>
+            <div id="todoFilterTagCombobox" class="todo-tag-combobox filter-tags">
+                <div id="todoFilterTags" class="todo-selected-tags"></div>
+                <input id="todoTagFilter" type="text" placeholder="Filter tags">
+                <div id="todoFilterTagSuggestions" class="todo-tag-suggestions hidden"></div>
+            </div>
+        </div>
+        <div id="todoList" class="todo-list"></div>
+    </aside>
+
+    <dialog id="engineDialog" class="engine-dialog">
+        <form method="dialog">
+            <header>
+                <h2>Edit Search Engine</h2>
+                <button value="cancel" type="submit">x</button>
+            </header>
+            <label>
+                <span>Name</span>
+                <input id="dialogName" type="text">
+            </label>
+            <label>
+                <span>Symbol</span>
+                <input id="dialogSymbol" type="text">
+            </label>
+            <label>
+                <span>Search URL</span>
+                <input id="dialogUrl" type="text">
+            </label>
+            <label>
+                <span>Logo URL</span>
+                <input id="dialogLogo" type="text">
+            </label>
+            <p class="dialog-hint">Use {q} where the query should be inserted.</p>
+            <footer>
+                <button class="dialog-button" value="cancel" type="submit">Cancel</button>
+                <button id="dialogDelete" class="dialog-button danger" value="default" type="button">Delete</button>
+                <button id="dialogSave" class="dialog-button primary" value="default" type="button">Save</button>
+            </footer>
+        </form>
+    </dialog>
+
+    <dialog id="todoDialog" class="todo-dialog">
+        <form method="dialog">
+            <header>
+                <h2>Edit Task</h2>
+                <button value="cancel" type="submit">x</button>
+            </header>
+            <label>
+                <span>Task</span>
+                <input id="editTodoTitle" type="text">
+            </label>
+            <label>
+                <span>Details</span>
+                <textarea id="editTodoNote"></textarea>
+            </label>
+            <div class="todo-dialog-row">
+                <label>
+                    <span>Priority</span>
+                    <select id="editTodoPriority">
+                        <option value="low">Low</option>
+                        <option value="normal">Normal</option>
+                        <option value="high">High</option>
+                    </select>
+                </label>
+                <label class="todo-dialog-tags">
+                    <span>Tags</span>
+                    <div id="editTodoTagCombobox" class="todo-tag-combobox">
+                        <div id="editTodoTags" class="todo-selected-tags"></div>
+                        <input id="editTodoTagInput" type="text" placeholder="Add tag">
+                        <div id="editTodoTagSuggestions" class="todo-tag-suggestions hidden"></div>
+                    </div>
+                </label>
+            </div>
+            <footer>
+                <button class="dialog-button" value="cancel" type="submit">Cancel</button>
+                <button id="todoDialogSave" class="dialog-button primary" value="default" type="button">Save</button>
+            </footer>
+        </form>
+    </dialog>
+
+    <dialog id="statsDialog" class="stats-dialog">
+        <form method="dialog">
+            <header>
+                <h2>Text Stats</h2>
+                <button value="cancel" type="submit">x</button>
+            </header>
+            <textarea id="statsText" spellcheck="false" placeholder="Paste text to analyze"></textarea>
+            <div id="statsDialogResult" class="stats-dialog-result">0 chars | 0 words | 0 no spaces | 0 lines</div>
+        </form>
+    </dialog>
+
+    <script src="index.js"></script>
+</body>
+</html>
