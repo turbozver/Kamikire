@@ -2535,6 +2535,13 @@ function escapeAttr(value) {
     }[char]));
 }
 
+
+document.querySelectorAll("[data-rate-link]").forEach((link) => {
+    if (navigator.userAgent.includes("Firefox")) {
+        link.href = link.dataset.firefoxUrl;
+    }
+});
+
 function escapeHtml(value) {
     return String(value || "").replace(/[&<>"']/g, (char) => ({
         "&": "&amp;",
