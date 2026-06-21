@@ -995,8 +995,11 @@ body.todo-visible .page {
     background: transparent !important;
     text-align: left;
 }
-.todo-tag-suggestion:hover {
+.todo-tag-suggestion:hover,
+.todo-tag-suggestion:focus-visible,
+.todo-tag-suggestion.keyboard-focus {
     background: var(--panel-soft) !important;
+    outline: none;
 }
 .todo-filters {
     display: grid;

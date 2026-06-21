@@ -290,6 +290,9 @@ todoTitle.addEventListener("keydown", (event) => {
 todoTagInput.addEventListener("input", renderTodoTagInput);
 todoTagInput.addEventListener("keydown", handleTodoTagKeydown);
 todoTagInput.addEventListener("focus", renderTodoTagInput);
+todoTagSuggestions.addEventListener("keydown", (event) => {
+    handleTagSuggestionNavigation(event, todoTagInput, todoTagSuggestions, renderTodoTagInput);
+});
 todoSearch.addEventListener("input", () => {
     todoQuery = todoSearch.value.trim().toLowerCase();
     renderTodos();
@@ -312,9 +315,15 @@ todoSortModeEl.addEventListener("change", () => {
 todoTagFilter.addEventListener("input", renderTodoFilterTagInput);
 todoTagFilter.addEventListener("focus", renderTodoFilterTagInput);
 todoTagFilter.addEventListener("keydown", handleTodoFilterTagKeydown);
+todoFilterTagSuggestions.addEventListener("keydown", (event) => {
+    handleTagSuggestionNavigation(event, todoTagFilter, todoFilterTagSuggestions, renderTodoFilterTagInput);
+});
 editTodoTagInput.addEventListener("input", renderEditTodoTagInput);
 editTodoTagInput.addEventListener("focus", renderEditTodoTagInput);
 editTodoTagInput.addEventListener("keydown", handleEditTodoTagKeydown);
+editTodoTagSuggestions.addEventListener("keydown", (event) => {
+    handleTagSuggestionNavigation(event, editTodoTagInput, editTodoTagSuggestions, renderEditTodoTagInput);
+});
 editTodoTitle.addEventListener("keydown", handleTodoDialogEnter);
 editTodoPriority.addEventListener("keydown", handleTodoDialogEnter);
 [todoTagCombobox, todoFilterTagCombobox, editTodoTagCombobox].forEach((combobox) => {
@@ -781,9 +790,19 @@ function handleGlobalKeydown(event) {
 
     if (handleSearchKeyboard(event)) return;
 
-    if (document.querySelector("dialog[open]")) return;
-
     const shortcuts = normalizeShortcuts(settings.shortcuts);
+    const openDialog = document.querySelector("dialog[open]");
+    if (openDialog) {
+        if (openDialog === todoDialog) {
+            const priority = getPriorityShortcutMatch(event, shortcuts);
+            if (priority) {
+                event.preventDefault();
+                editTodoPriority.value = priority;
+            }
+        }
+        return;
+    }
+
     if (matchesShortcut(event, shortcuts.focusSearch)) {
         event.preventDefault();
         input.focus();
@@ -1990,6 +2009,7 @@ function matchesTodoFilters(todo) {
 }
 
 function handleTodoFilterTagKeydown(event) {
+    if (handleTagSuggestionNavigation(event, todoTagFilter, todoFilterTagSuggestions, renderTodoFilterTagInput)) return;
     if (event.key !== "Enter" && event.key !== ",") return;
     event.preventDefault();
     const value = todoTagFilter.value.trim();
@@ -2077,6 +2097,7 @@ function renderTodoFilterTagInput() {
 }
 
 function handleTodoTagKeydown(event) {
+    if (handleTagSuggestionNavigation(event, todoTagInput, todoTagSuggestions, renderTodoTagInput)) return;
     if (event.key === "Enter" || event.key === ",") {
         event.preventDefault();
         addTodoDraftTag(todoTagInput.value);
@@ -2135,6 +2156,7 @@ function renderTodoTagInput() {
 }
 
 function handleEditTodoTagKeydown(event) {
+    if (handleTagSuggestionNavigation(event, editTodoTagInput, editTodoTagSuggestions, renderEditTodoTagInput)) return;
     if (event.key === "Enter" || event.key === ",") {
         event.preventDefault();
         if (event.key === "Enter" && !editTodoTagInput.value.trim()) {
@@ -2210,6 +2232,58 @@ function handleTodoDialogEnter(event) {
     if (event.key !== "Enter") return;
     event.preventDefault();
     saveTodoDialog();
+}
+
+function handleTagSuggestionNavigation(event, inputElement, suggestionsElement, renderSuggestions) {
+    const getButtons = () => Array.from(suggestionsElement.querySelectorAll(".todo-tag-suggestion"));
+
+    if (event.target === inputElement && event.key === "ArrowDown") {
+        renderSuggestions();
+        const buttons = getButtons();
+        if (!buttons.length) return false;
+        event.preventDefault();
+        focusTagSuggestion(suggestionsElement, buttons[0]);
+        return true;
+    }
+
+    const buttons = getButtons();
+    const currentIndex = buttons.indexOf(event.target);
+    if (currentIndex < 0) return false;
+
+    if (event.key === "ArrowLeft" || event.key === "ArrowRight") {
+        event.preventDefault();
+        const direction = event.key === "ArrowRight" ? 1 : -1;
+        const nextIndex = (currentIndex + direction + buttons.length) % buttons.length;
+        focusTagSuggestion(suggestionsElement, buttons[nextIndex]);
+        return true;
+    }
+
+    if (event.key === "ArrowUp") {
+        event.preventDefault();
+        clearTagSuggestionFocus(suggestionsElement);
+        inputElement.focus();
+        return true;
+    }
+
+    if (event.key === "Enter") {
+        event.preventDefault();
+        event.target.click();
+        return true;
+    }
+
+    return false;
+}
+
+function focusTagSuggestion(suggestionsElement, button) {
+    clearTagSuggestionFocus(suggestionsElement);
+    button.classList.add("keyboard-focus");
+    button.focus();
+}
+
+function clearTagSuggestionFocus(suggestionsElement) {
+    suggestionsElement.querySelectorAll(".todo-tag-suggestion.keyboard-focus").forEach((button) => {
+        button.classList.remove("keyboard-focus");
+    });
 }
 
 function createTagChip(label, onRemove, options = {}) {
